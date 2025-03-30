@@ -1,0 +1,7 @@
+tensorflow
+pillow
+scipy
+numpy
+FastAPI
+uvicorn
+python-multipart
