@@ -61,4 +61,3 @@ print(f'Test accuracy: {test_accuracy}')
 
 # Save the trained model
 model.save('models/tb_detection_model.h5')
-
