@@ -3,14 +3,14 @@ from fastapi import FastAPI, File, UploadFile, Request, HTTPException
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-import tensorflow as tf  # Using standard TF Lite
+import tensorflow as tf
+from tensorflow.keras.applications.inception_v3 import preprocess_input  # New import
 from PIL import Image
 import numpy as np
 import io
 import os
 from typing import AsyncIterator, Any
 import logging
-
 from mangum import Mangum
 
 # Configure logging
@@ -20,6 +20,9 @@ logger = logging.getLogger(__name__)
 # Initialize interpreter
 interpreter = None
 
+# Constants (new)
+MODEL_INPUT_SIZE = (299, 299)  # InceptionV3 requires 299x299 input
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -28,21 +31,41 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     MODEL_PATH = Path(__file__).parent / "model" / "tb_model.tflite"
 
     try:
-        # Load TFLite model (using current stable approach)
+        # Verify model file exists first
+        if not MODEL_PATH.exists():
+            logger.error(f"❌ Model file not found at {MODEL_PATH}")
+            raise HTTPException(status_code=500, detail="Model file not found")
+
+        # Load TFLite model
         interpreter = tf.lite.Interpreter(model_path=str(MODEL_PATH))
         interpreter.allocate_tensors()
+
+        # Verify input shape
+        input_details = interpreter.get_input_details()
+        expected_shape = np.array([1, *MODEL_INPUT_SIZE, 3], dtype=np.int32)
+
+        # Proper array comparison
+        if not np.array_equal(input_details[0]['shape'], expected_shape):
+            error_msg = (f"Model expects shape {input_details[0]['shape']}, "
+                         f"but expected {expected_shape.tolist()}")
+            logger.error(f"❌ {error_msg}")
+            raise HTTPException(status_code=500, detail=error_msg)
+
         logger.info("✅ Model loaded successfully with TF Lite")
+        logger.info(f"Input details: {input_details}")
         yield
+
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"❌ Failed to load model: {str(e)}")
-        raise HTTPException(status_code=500, detail="Model loading failed")
+        logger.error(f"❌ Failed to load model: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Model loading failed: {str(e)}")
     finally:
         logger.info("🚀 Application ready")
 
-
 app = FastAPI(
     title="TB Detection API",
-    description="API for detecting Tuberculosis from chest X-rays",
+    description="API for detecting Tuberculosis from chest X-rays using InceptionV3",
     lifespan=lifespan
 )
 
@@ -53,11 +76,15 @@ app.mount("/static", StaticFiles(directory=str(Path(BASE_DIR, "static"))), name=
 
 
 def preprocess_image(image_bytes: bytes) -> np.ndarray:
-    """Preprocess uploaded image"""
+    """Preprocess uploaded image for InceptionV3"""
     try:
         img = Image.open(io.BytesIO(image_bytes))
-        img = img.resize((224, 224)).convert('RGB')
-        img_array = np.array(img, dtype=np.float32) / 255.0
+        img = img.resize(MODEL_INPUT_SIZE).convert('RGB')  # Now 299x299
+        img_array = np.array(img, dtype=np.float32)
+
+        # Replace manual scaling with InceptionV3's preprocessing
+        img_array = preprocess_input(img_array)  # Normalizes to [-1, 1]
+
         return np.expand_dims(img_array, axis=0)
     except Exception as e:
         logger.error(f"Image processing failed: {str(e)}")
@@ -65,10 +92,15 @@ def preprocess_image(image_bytes: bytes) -> np.ndarray:
 
 
 def predict(image_array: np.ndarray) -> dict:
-    """Run model prediction"""
+    """Run model prediction (unchanged but now compatible with InceptionV3)"""
     try:
         input_details = interpreter.get_input_details()
         output_details = interpreter.get_output_details()
+
+        # Verify input shape (debugging)
+        if image_array.shape != tuple(input_details[0]['shape']):
+            logger.warning(
+                f"⚠️ Input shape {image_array.shape} doesn't match model's expected {input_details[0]['shape']}")
 
         interpreter.set_tensor(input_details[0]['index'], image_array)
         interpreter.invoke()
@@ -85,6 +117,7 @@ def predict(image_array: np.ndarray) -> dict:
         raise HTTPException(status_code=500, detail="Prediction error")
 
 
+# The following routes remain unchanged
 @app.get("/", include_in_schema=False)
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -95,14 +128,12 @@ async def predict_api(request: Request, file: UploadFile = File(...)):
     if interpreter is None:
         raise HTTPException(status_code=503, detail="Model not loaded")
 
-    # Validate file exists and has content
     if not file or file.size == 0:
         return templates.TemplateResponse("index.html", {
             "request": request,
             "error": "Please upload a valid image file"
         })
 
-    # Validate file type
     allowed_types = ["image/jpeg", "image/png", "image/jpg"]
     if file.content_type not in allowed_types:
         return templates.TemplateResponse("index.html", {
@@ -112,8 +143,6 @@ async def predict_api(request: Request, file: UploadFile = File(...)):
 
     try:
         contents = await file.read()
-
-        # Validate image content
         try:
             img_array = preprocess_image(contents)
         except Exception as e:
@@ -123,18 +152,17 @@ async def predict_api(request: Request, file: UploadFile = File(...)):
             })
 
         result = predict(img_array)
-
         return templates.TemplateResponse("result.html", {
             "request": request,
             "result": result,
             "filename": file.filename
         })
-
     except Exception as e:
         return templates.TemplateResponse("index.html", {
             "request": request,
             "error": f"Processing error: {str(e)}"
         })
+
 
 @app.get("/health")
 async def health_check():
@@ -142,8 +170,10 @@ async def health_check():
         "status": "healthy",
         "model_loaded": interpreter is not None,
         "framework": "tensorflow-lite",
+        "input_size": MODEL_INPUT_SIZE,  # Added for debugging
         "version": tf.__version__
     }
+
 
 def handler(event: Any, context: Any | None = None) -> Any | None:
     if not event.get("requestContext"):
@@ -152,6 +182,7 @@ def handler(event: Any, context: Any | None = None) -> Any | None:
     if context:
         return mangum(event, context)
     return None
+
 
 if __name__ == "__main__":
     import uvicorn
