@@ -7,3 +7,10 @@ __pycache__
 *.pyd
 *.db
 *.sqlite3
+*.swp
+package-lock.json
+.pytest_cache
+
+# CDK asset staging directory
+.cdk.staging
+cdk.out

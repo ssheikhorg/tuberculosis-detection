@@ -1,0 +1,29 @@
+# System files
+.git
+.gitignore
+.vscode
+.idea
+*.swp
+*.swo
+
+# Serverless files
+.serverless/
+node_modules/
+
+# Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+venv/
+
+# Unnecessary folders
+tests/
+docs/
+dist/
+build/
+
+# Environment files
+.env
+*.env

@@ -3,43 +3,129 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="initial-scale=1, width=device-width" />
+    <title>Tuberculosis Detection AI</title>
 
-    <link rel="stylesheet" href="static/css/1/global.css" />
+    <!-- Both global.css files included with media queries -->
+    <link rel="stylesheet" href="static/css/1/global.css" media="screen and (max-width: 1024px)" />
+    <link rel="stylesheet" href="static/css/2/global.css" media="screen and (min-width: 1025px)" />
+
     <link rel="stylesheet" href="static/css/1/index.css" />
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap"
     />
 
-   <script src="static/js/xray.js"></script>
+    <style>
+      /* Error message styling that works with both CSS files */
+      .error-container {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1000;
+        width: 90%;
+        max-width: 500px;
+      }
+      .error-message {
+        color: #ff3333;
+        background-color: #ffeeee;
+        padding: 12px 20px;
+        border-radius: 8px;
+        border: 1px solid #ffaaaa;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        font-family: 'Inter', sans-serif;
+        font-size: 14px;
+        text-align: center;
+        display: none; /* Hidden by default */
+      }
+      @media (max-width: 768px) {
+        .error-container {
+          width: 95%;
+          top: 10px;
+        }
+      }
+    </style>
 
+    <script src="static/js/xray.js"></script>
+    <script>
+      // Enhanced file validation
+      function validateImage(input) {
+        const errorDisplay = document.getElementById('error-message');
+        errorDisplay.style.display = 'none';
+
+        if (!input.files || input.files.length === 0) {
+          return true;
+        }
+
+        const file = input.files[0];
+        const validTypes = ['image/jpeg', 'image/png'];
+        const maxSize = 5 * 1024 * 1024; // 5MB
+
+        if (!validTypes.includes(file.type)) {
+          showError('Only JPG/JPEG or PNG files are allowed');
+          input.value = '';
+          return false;
+        }
+
+        if (file.size > maxSize) {
+          showError('File size must be less than 5MB');
+          input.value = '';
+          return false;
+        }
+
+        return true;
+      }
+
+      function showError(message) {
+        const errorDisplay = document.getElementById('error-message');
+        errorDisplay.textContent = message;
+        errorDisplay.style.display = 'block';
+        setTimeout(() => {
+          errorDisplay.style.display = 'none';
+        }, 5000);
+      }
+
+      function validateForm() {
+        const input = document.getElementById('xray-upload');
+        if (!input.files || input.files.length === 0) {
+          showError('Please select an image file first');
+          return false;
+        }
+        return validateImage(input);
+      }
+    </script>
   </head>
   <body>
-    <div class="index1">
-
-<div class="xrayboard">
-  <div class="analysis-image">Analysis Image</div>
-  <div class="board" id="previewBox">
-    <img id="previewImage" src="" >
-  </div>
-</div>
-
-    <div class="button-container">
-     <button id="normalButton" class="custom-button" onclick="applyFilters()">NORMAL</button> 
-     <button id="inverseButton" class="custom-button" onclick="resetImage()">INVERSE</button>
+    <!-- Error container (positioned fixed at top) -->
+    <div class="error-container">
+      <div id="error-message" class="error-message"></div>
     </div>
 
-<form action="/predict" method="post" enctype="multipart/form-data">
-  <div class="upload">
-    <label for="xray-upload" class="custom-upload-button">
-      UPLOAD
-    </label>
-    <input type="file" id="xray-upload" name="image" accept=".jpg, .jpeg, .png" onchange="previewImage()" />
-  </div>
-  <div class="submit">
-    <button type="submit" class="submit-button" value="Predict">SUBMIT</button>
-  </div>
-</form>
+    <!-- Main content (unchanged from your original) -->
+    <div class="index1">
+      <div class="xrayboard">
+        <div class="analysis-image">Analysis Image</div>
+        <div class="board" id="previewBox">
+          <img id="previewImage" src="" alt="X-ray preview">
+        </div>
+      </div>
+
+      <div class="button-container">
+        <button id="normalButton" class="custom-button" onclick="applyFilters()">NORMAL</button>
+        <button id="inverseButton" class="custom-button" onclick="resetImage()">INVERSE</button>
+      </div>
+
+      <form action="/predict" method="post" enctype="multipart/form-data" onsubmit="return validateForm()">
+        <div class="upload">
+          <label for="xray-upload" class="custom-upload-button">
+            UPLOAD
+          </label>
+          <input type="file" id="xray-upload" name="file" accept=".jpg,.jpeg,.png" onchange="validateImage(this); previewImage();">
+        </div>
+        <div class="submit">
+          <button type="submit" class="submit-button">SUBMIT</button>
+        </div>
+      </form>
 
       <h1 class="headline">
         <span class="headline-txt">
@@ -50,6 +136,7 @@
           </p>
         </span>
       </h1>
+
       <div class="this-ai-analysis-container">
         <p class="this-ai-analysis">
           This AI analysis is for informational purposes only. It is not a
@@ -62,5 +149,15 @@
         </p>
       </div>
     </div>
+
+    <!-- Display backend errors if any -->
+    <script>
+      // Display backend errors if present in template
+      document.addEventListener('DOMContentLoaded', function() {
+        {% if error %}
+          showError("{{ error }}");
+        {% endif %}
+      });
+    </script>
   </body>
 </html>

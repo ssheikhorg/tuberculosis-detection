@@ -37,13 +37,13 @@ This project aims to develop an AI-based system for the detection of Tuberculosi
 2. Develop a simplified TB detection AI model using Python and TensorFlow/Keras:
 
    ```shell
-   python tb_detection_model.py
+   python train.py
    ```
 
 3. Build and run the Docker container:
 
    ```shell
-   python -m pip install -r requirements.txt
+   python -m pip install -r iac.txt
    python main.py
    ```
 

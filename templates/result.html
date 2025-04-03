@@ -14,54 +14,47 @@
   <body>
     <div class="result"><canvas id="nokey"></canvas>
       <div class="mainbox">
-<div class="ripple1">
+        <div class="ripple1">
           <div class="dot1"></div>
-          </div>
-          <div class="ripple2">
+        </div>
+        <div class="ripple2">
           <div class="dot2"></div>
-          </div>
-          <div class="ripple3">
+        </div>
+        <div class="ripple3">
           <div class="dot3"></div>
-          </div>
-          <div class="ripple4">
+        </div>
+        <div class="ripple4">
           <div class="dot4"></div>
-          </div>
+        </div>
         <img class="lungsimage-icon" alt="" src="static/img/lungsimage.svg" />
 
         <div class="interpretationbox">
-          <img
-            class="interpretationbox-child"
-            alt=""
-            src="static/img/vector-4.svg"
-          />
-
+          <img class="interpretationbox-child" alt="" src="static/img/vector-4.svg" />
           <div class="interpretation">
             <div class="interpretation-child"></div>
             <div class="interpretation-item"></div>
             <div class="interpretation1">Interpretation</div>
             <img class="frame-icon" alt="" src="static/img/frame.svg" />
             <div class="interpretation-inner">
-         {% if prediction %}
-            <p style="margin-left:15px"><br/></br/>
-                {% if prediction == "TB Positive" %}
-                    <span class="positive">Indication of {{ prediction }}</span>
-                {% else %}
-                    <span class="negative">Indication of {{ prediction }}</span>
-                {% endif %}
-            </p>
-        {% else %}
-            <p>{{ error_message }}</p>
-        {% endif %}
-          </div>
+              {% if result %}
+                <p style="margin-left:15px"><br/><br/>
+                  {% if result.diagnosis == "TB Positive" %}
+                    <span class="positive">Indication of {{ result.diagnosis }}</span><br/>
+                    <span class="confidence">Confidence: {{ result.percentage }}</span>
+                  {% else %}
+                    <span class="negative">Indication of {{ result.diagnosis }}</span><br/>
+                    <span class="confidence">Confidence: {{ result.percentage }}</span>
+                  {% endif %}
+                </p>
+              {% elif error %}
+                <p class="error">{{ error }}</p>
+              {% endif %}
+            </div>
           </div>
         </div>
-        <div class="involvementbox">
-          <img
-            class="involvementbox-child"
-            alt=""
-            src="static/img/vector-6.svg"
-          />
 
+        <div class="involvementbox">
+          <img class="involvementbox-child" alt="" src="static/img/vector-6.svg" />
           <div class="involvement">
             <div class="involvement-child"></div>
             <div class="involvement-item"></div>
@@ -70,73 +63,71 @@
               <p class="lung">Involvement</p>
             </div>
             <img class="vector-icon" alt="" src="static/img/vector.svg" />
-
             <div class="involvement-inner">
-                    {% if prediction %}
-            <p style="margin-left:20px"><br/>
-                {% if prediction == "TB Positive" %}
+              {% if result %}
+                <p style="margin-left:20px"><br/>
+                  {% if result.diagnosis == "TB Positive" %}
                     <span class="positive">No AI Data</span>
-                {% else %}
+                  {% else %}
                     <span class="negative">Unilateral: No</span>
                     <br/>
                     <span class="negative">Bilateral: No</span>
-                {% endif %}
-            </p>
-        {% else %}
-            <p>{{ error_message }}</p>
-        {% endif %}
-         </div>
+                  {% endif %}
+                </p>
+              {% elif error %}
+                <p class="error">{{ error }}</p>
+              {% endif %}
+            </div>
           </div>
         </div>
+
         <div class="cavitybox">
           <img class="cavitybox-child" alt="" src="static/img/vector-5.svg" />
-
           <div class="cavity">
             <div class="cavity-child"></div>
             <div class="cavity-item"></div>
             <div class="cavity1">Cavity</div>
             <img class="frame-icon1" alt="" src="static/img/frame1.svg" />
-
             <div class="cavity-inner">
-            {% if prediction %}
-            <p style="margin-left:20px"><br/>
-                {% if prediction == "TB Positive" %}
+              {% if result %}
+                <p style="margin-left:20px"><br/>
+                  {% if result.diagnosis == "TB Positive" %}
                     <span class="positive">No AI Data</span>
-                {% else %}
+                  {% else %}
                     <span class="negative">Cavity: No</span>
-                {% endif %}
-            </p>
-        {% else %}
-            <p>{{ error_message }}</p>
-        {% endif %}
+                  {% endif %}
+                </p>
+              {% elif error %}
+                <p class="error">{{ error }}</p>
+              {% endif %}
             </div>
           </div>
         </div>
+
         <div class="zonesbox">
           <div class="zones">
             <div class="zones-child"></div>
             <div class="zones-item"></div>
             <div class="number-of-zones">Number of Zones</div>
             <div class="zones-inner">
-          {% if prediction %}
-            <p style="margin-left:20px"><br/>
-                {% if prediction == "TB Positive" %}
+              {% if result %}
+                <p style="margin-left:20px"><br/>
+                  {% if result.diagnosis == "TB Positive" %}
                     <span class="positive">No AI Data</span>
-                {% else %}
+                  {% else %}
                     <span class="negative">No Zones Involved</span>
-                  
-                {% endif %}
-            </p>
-        {% else %}
-            <p>{{ error_message }}</p>
-        {% endif %}
-          </div>
+                  {% endif %}
+                </p>
+              {% elif error %}
+                <p class="error">{{ error }}</p>
+              {% endif %}
+            </div>
           </div>
           <img class="vector-icon1" alt="" src="static/img/vector1.svg" />
-
           <img class="zonesbox-child" alt="" src="static/img/vector-8.svg" />
         </div>
       </div>
+
       <div class="this-ai-analysis-container">
         <p class="this-ai-analysis">
           This AI analysis is for informational purposes only. It is not a
@@ -148,6 +139,7 @@
           follow-up.
         </p>
       </div>
+
       <div class="headtitle">
         <h1 class="headline">
           <p class="lung">Tuberculosis</p>
@@ -158,11 +150,12 @@
         </h1>
         <img class="headtitle-child" alt="" src="static/img/vector-9.svg" />
       </div>
+
       <a href="/" class="button">
-  <div class="button-child"></div>
-  <div class="reset">RESTART</div>
-</a>
+        <div class="button-child"></div>
+        <div class="reset">RESTART</div>
+      </a>
     </div>
-<script src="static/js/bg.js"></script>
+    <script src="static/js/bg.js"></script>
   </body>
 </html>
