@@ -11,3 +11,4 @@ pillow==11.1.0
 matplotlib==3.10.1
 scikit-learn==1.6.1
 seaborn==0.13.2
+tensorflow-cpu
