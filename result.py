@@ -144,7 +144,13 @@ def main():
 
     # Generate visualizations and reports
     plot_training_history(history)
-    report = generate_classification_report(model, val_gen)
+
+    # Convert the continuous probabilities to binary labels
+    val_pred_probs = model.predict(val_gen)
+    val_pred_labels = (val_pred_probs > 0.5).astype(int)  # For binary classification
+
+    # Generate classification report
+    report_data = classification_report(val_gen.classes, val_pred_labels, output_dict=True)
 
     # Print dataset and model info
     print("\n=== Dataset Information ===")
@@ -155,7 +161,7 @@ def main():
         print(f"  {cls}: {np.sum(train_gen.classes == idx)} samples")
 
     print("\n=== Classification Report ===")
-    print(report)
+    print(report_data)
 
     print("\n=== Final Metrics ===")
     print(f"Validation Accuracy: {history.history['val_accuracy'][-1]:.2f}")
@@ -175,19 +181,19 @@ def main():
     metrics_df = pd.DataFrame([final_metrics])
     class_distribution_df = pd.DataFrame(list(class_distribution.items()), columns=["Class", "Samples"])
 
-    # Save results to CSV
-    metrics_df.to_csv('training_metrics_report.csv', index=False)
-    class_distribution_df.to_csv('class_distribution_report.csv', index=False)
+    # Ensure the 'report' folder exists
+    os.makedirs('reports', exist_ok=True)
 
-    # Optionally save the classification report to CSV (convert it to a DataFrame)
-    report_data = classification_report(val_gen.classes, model.predict(val_gen), output_dict=True)
+    # Save results to CSV inside the 'report' folder
+    metrics_df.to_csv('reports/training_metrics_report.csv', index=False)
+    class_distribution_df.to_csv('reports/class_distribution_report.csv', index=False)
+
+    # Save classification report to CSV inside the 'report' folder
     report_df = pd.DataFrame(report_data).transpose()
-    report_df.to_csv('classification_report.csv', index=True)
+    report_df.to_csv('reports/classification_report.csv', index=True)
 
-    print("\n=== Reports saved to CSV files ===")
+    print("\n=== Reports saved to CSV files inside the 'reports' folder ===")
 
 
 if __name__ == "__main__":
-    os.makedirs('reports', exist_ok=True)
-    os.makedirs('visualizations', exist_ok=True)
     main()
