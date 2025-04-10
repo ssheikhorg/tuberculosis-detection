@@ -7,6 +7,7 @@ from tensorflow.keras.optimizers import Adam
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+import pandas as pd
 from sklearn.metrics import classification_report, confusion_matrix
 import os
 
@@ -160,6 +161,30 @@ def main():
     print(f"Validation Accuracy: {history.history['val_accuracy'][-1]:.2f}")
     print(f"Validation Precision: {history.history['val_precision'][-1]:.2f}")
     print(f"Validation Recall: {history.history['val_recall'][-1]:.2f}")
+
+    # Prepare data for CSV report
+    final_metrics = {
+        "Validation Accuracy": history.history['val_accuracy'][-1],
+        "Validation Precision": history.history['val_precision'][-1],
+        "Validation Recall": history.history['val_recall'][-1],
+    }
+
+    class_distribution = {cls: np.sum(train_gen.classes == idx) for cls, idx in train_gen.class_indices.items()}
+
+    # Create a DataFrame for the final metrics and class distribution
+    metrics_df = pd.DataFrame([final_metrics])
+    class_distribution_df = pd.DataFrame(list(class_distribution.items()), columns=["Class", "Samples"])
+
+    # Save results to CSV
+    metrics_df.to_csv('training_metrics_report.csv', index=False)
+    class_distribution_df.to_csv('class_distribution_report.csv', index=False)
+
+    # Optionally save the classification report to CSV (convert it to a DataFrame)
+    report_data = classification_report(val_gen.classes, model.predict(val_gen), output_dict=True)
+    report_df = pd.DataFrame(report_data).transpose()
+    report_df.to_csv('classification_report.csv', index=True)
+
+    print("\n=== Reports saved to CSV files ===")
 
 
 if __name__ == "__main__":
